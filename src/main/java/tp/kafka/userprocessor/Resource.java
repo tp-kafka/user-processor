@@ -32,7 +32,7 @@ public class Resource {
         var store = streams.store(
                  StoreQueryParameters.fromNameAndType("usersById", QueryableStoreTypes.<String, User>keyValueStore())
         );
-        
+
         var result = new ArrayList<User>();
         store.all().forEachRemaining(kv -> result.add(kv.value));
         return result;

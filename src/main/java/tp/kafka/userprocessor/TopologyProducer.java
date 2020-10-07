@@ -29,6 +29,8 @@ public class TopologyProducer {
 
     private final JsonbSerde<User> userSerde = new JsonbSerde<>(User.class);
     private final StringSerde stringSerde = new StringSerde();
+    KeyValueBytesStoreSupplier usersByIdStoreSupplier = Stores.inMemoryKeyValueStore("usersById");
+
 
     @Inject
     Configuration conf;
@@ -38,7 +40,10 @@ public class TopologyProducer {
         StreamsBuilder builder = new StreamsBuilder();
         var userTable = builder.stream(conf.userTopic(), Consumed.with(stringSerde, userSerde))
             .peek(this::logUser)
-            .toTable(Named.as("usersById"));
+            .toTable(Materialized.<String, User>as(usersByIdStoreSupplier)
+                .withKeySerde(stringSerde)
+                .withValueSerde(userSerde)
+            );
      
         return builder.build();
     }
