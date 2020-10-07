@@ -1,4 +1,4 @@
-package i3oot.qdemo;
+package tp.kafka.userprocessor;
 
 import java.time.Duration;
 
@@ -21,29 +21,30 @@ import org.apache.kafka.streams.state.Stores;
 
 import io.quarkus.kafka.client.serialization.JsonbSerde;
 import lombok.extern.java.Log;
+import org.apache.kafka.common.serialization.Serdes.StringSerde;
 
 @ApplicationScoped
 @Log
 public class TopologyProducer {
 
-    private final JsonbSerde<ChatMessage> chatMessageSerde = new JsonbSerde<>(ChatMessage.class);
-    private final JsonbSerde<Void> voidSerde = new JsonbSerde<>(Void.class);
+    private final JsonbSerde<User> userSerde = new JsonbSerde<>(User.class);
+    private final StringSerde stringSerde = new StringSerde();
 
-    
     @Inject
     Configuration conf;
-
 
     @Produces
     public Topology windowedMsgCountPerUser() {
         StreamsBuilder builder = new StreamsBuilder();
-        var windowedMsgCountPerUser = builder.stream(conf.inputTopic(), Consumed.with(voidSerde, chatMessageSerde))
-            .peek((k,v) -> TopologyProducer.log.info(v.toString()))
-            .<String>groupBy((k,v) -> v.getUserId())
-            .windowedBy(TimeWindows.of(Duration.ofSeconds(2)))
-            .count();
-        windowedMsgCountPerUser.toStream().to("windowedMsgCountPerUser");
+        var userTable = builder.stream(conf.userTopic(), Consumed.with(stringSerde, userSerde))
+            .peek(this::logUser)
+            .toTable(Named.as("usersById"));
+     
         return builder.build();
+    }
+
+    void logUser(String key, User user){
+        TopologyProducer.log.info("processing [" + key + "] -> " + user);
     }
 
 }
