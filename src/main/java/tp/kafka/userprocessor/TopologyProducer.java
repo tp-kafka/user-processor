@@ -43,7 +43,7 @@ public class TopologyProducer {
     Configuration conf;
 
     @Produces
-    public Topology windowedMsgCountPerUser() {
+    public Topology joinChatWithUserdata() {
         StreamsBuilder builder = new StreamsBuilder();
         var userTable = builder.stream(conf.userTopic(), Consumed.with(stringSerde, userSerde))
             .peek(this::logUser)
