@@ -45,15 +45,15 @@ public class TopologyProducer {
     @Produces
     public Topology joinChatWithUserdata() {
         StreamsBuilder builder = new StreamsBuilder();
-        var userTable = builder.stream(conf.userTopic(), Consumed.with(stringSerde, userSerde))
-            .peek(this::logUser)
-            .toTable(materializesUserTable());
+        //(1) KTable
+        //TODO: create a stream from `conf.userTopic()`. Use the provided Serdes.
+        //TODO: create a materialized KTable from that stream by using `the description provided in `materializesUserTable()`
 
-        builder.stream(conf.filteredTopic(), Consumed.with(stringSerde, msgSerde))
-               .selectKey(this::selectUserId, Named.as("PartitionChatByUserId"))
-               .join(userTable, this::enrich) 
-               .peek(this::logMessage)
-               .to(conf.outputTopic(), Produced.with(stringSerde, richMsgSerde));
+        //(2) enrich chat messages
+        //TODO: create a stream from `conf.filteredTopic()`. Use the provided Serdes.
+        //TODO: ensure that chat messages are processed on the processor insance which contains the user data matching the userId in the chat message.
+        //TODO: Join the chat message with the user data. Use the `enrich` method to create a `RichChatMessage`
+        //TODO: produce the resulting stream to `conf.outputTopic()`. Use the provided serdes.
 
         return builder.build();
     }
@@ -64,18 +64,7 @@ public class TopologyProducer {
                     .withValueSerde(userSerde);
     }
 
-    String selectUserId(String nothing, ChatMessage msg){
-        return msg.getUserId();
-    }
-
-    void logUser(String key, User user){
-        TopologyProducer.log.info("processing [" + key + "] -> " + user);
-    }
-
-    void logMessage(String key, RichChatMessage msg){
-        TopologyProducer.log.info("enriching [" + key + "] ->" + msg);
-    }
-
+ 
     RichChatMessage enrich(ChatMessage msg, User user) {
         return  new RichChatMessage(user, msg.getMessage());
     }
